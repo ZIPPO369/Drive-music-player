@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gothic Music Player</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --container-bg: #151515;
+            --accent-color: #8b0000; /* Dark Red / Blood */
+            --text-color: #e0e0e0;
+            --text-dim: #888;
+            --border-color: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .player-container {
+            background-color: var(--container-bg);
+            width: 100%;
+            max-width: 450px;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(139, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+        }
+
+        .now-playing {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .now-playing h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .track-name {
+            font-size: 20px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 5px;
+        }
+
+        .track-artist {
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 24px;
+            transition: transform 0.2s, color 0.2s;
+        }
+
+        .btn:hover {
+            color: var(--accent-color);
+            transform: scale(1.1);
+        }
+
+        .btn-play {
+            width: 60px;
+            height: 60px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            box-shadow: 0 5px 15px rgba(139, 0, 0, 0.4);
+        }
+
+        .btn-play:hover {
+            background-color: #b30000;
+            color: white;
+        }
+
+        .progress-container {
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 5px;
+            background-color: #333;
+            border-radius: 5px;
+            cursor: pointer;
+            position: relative;
+            margin-bottom: 10px;
+            -webkit-appearance: none;
+        }
+
+        .progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #333;
+            border-radius: 5px;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            background: var(--text-color);
+            cursor: pointer;
+        }
+
+        .playlist-container {
+            max-height: 250px;
+            overflow-y: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+        }
+
+        .playlist-container::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .playlist-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 10px;
+        }
+
+        .playlist-item {
+            padding: 12px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .playlist-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .playlist-item.active {
+            background-color: rgba(139, 0, 0, 0.15);
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .playlist-item .track-index {
+            color: var(--text-dim);
+            width: 20px;
+        }
+
+        .icon {
+            fill: currentColor;
+            width: 1em;
+            height: 1em;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .player-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="player-container">
+    <div class="now-playing">
+        <h2>Právě hraje</h2>
+        <div class="track-name" id="track-name">Načítání...</div>
+        <div class="track-artist" id="track-artist">Playlist</div>
+    </div>
+
+    <div class="progress-container">
+        <input type="range" class="progress-bar" id="progress-bar" min="0" max="100" value="0">
+        <div class="time-info">
+            <span id="current-time">0:00</span>
+            <span id="duration">0:00</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn" id="prev-btn">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path></svg>
+        </button>
+        <button class="btn btn-play" id="play-btn">
+            <svg class="icon" id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+        </button>
+        <button class="btn" id="next-btn">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6zm9-12h2v12h-2z"></path></svg>
+        </button>
+    </div>
+
+    <div class="volume-container">
+        <svg class="icon" style="font-size: 18px;" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path></svg>
+        <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.01" value="0.7">
+    </div>
+
+    <div class="playlist-container" id="playlist">
+        <!-- Playlist items will be generated here -->
+    </div>
+</div>
+
+<audio id="audio-player"></audio>
+
+<script>
+    // Seznam písniček (Data z Google Disku)
+    const songs = [
+        {"name": "James Marvel - Way Of The Warrior (ft. MC Mota)", "id": "1BWTYizIdS1oh_1WUVuxROxoCd-dB1mKV"},
+        {"name": "Israel Kamakawiwo'ole - Over The Rainbow & What A Wonderful World", "id": "1dByFEgZrNliwR6zM_DdTRZA2q1wyQ_pK"},
+        {"name": "Kali - Môžem (PROD. Baret)", "id": "1_4uxtAyqlmCQu5DguVnFO35nJkDn_Gxp"},
+        {"name": "Nicky Jam y Enrique Iglesias - El Perdón", "id": "1izwxI0EzQ87oaY4oxUYB6kbGaL4m9hEU"},
+        {"name": "Aaron Smith - Dancin (KRONO Remix)", "id": "1LICNFYEUAh8pcT9daqXaiIJcG4XiI9Sd"},
+        {"name": "ABDE - TAK DÁVNO", "id": "18ahpJ3acsLRWfA-e0TJfqJOUwAmLEu7N"},
+        {"name": "ABDE & SHARLOTA - TEP", "id": "1jAhhNs1ILdUqdc0A9pIWT4GiW_EB7Tn9"},
+        {"name": "Abstract - Scars (ft. RoZe)", "id": "16hdSId7KkoHQnR-G5D5Sx2i8v4z8zAtf"},
+        {"name": "Afrojack & Martin Garrix - Turn Up The Speakers", "id": "1iDm2Crh5DRU8Pk-wmdJS3tOYCUCQEZDF"},
+        {"name": "Akon - Akon's Beautiful Day", "id": "1e16sjseUavFpUPywfeF68A5aYitbLCTo"},
+        {"name": "Akon - Sorry, Blame It On Me", "id": "1c0RxhSItO3HzaZNevFFErkQzKWO1jtjl"},
+        {"name": "Alan Murin - Naveky", "id": "14ISHmfYsfVeTvr39XbZaWAuUkU_CRmer"},
+        {"name": "Alan Murin - Neber mi mood", "id": "1ZPJQdgki4Qi_pnxhqgQhZUnoaAYNtRBR"},
+        {"name": "Alan Murin - Prepáč", "id": "1kWTYiFPwE8IqTbn7RKjoun3ee-9DCLZX"},
+        {"name": "Alan Murin - Súdení", "id": "1ECR-PVniCM_pzYQrU5JYNzr89h47rBdG"},
+        {"name": "Alan Murin ft. Call Dominika - Východ", "id": "1_1T1aN6FSOUm_8-MuZhB4Zv2WcTAQiwG"},
+        {"name": "Alan Murin ft. Rytmus - Vamos Bombas", "id": "1-T0EAkmTjs0SaRYYRvAYjkz5Ye4YUcC6"},
+        {"name": "Alan Murin ft. Tina - Do Rúk", "id": "106FQbBtTifERVMgdtirJSqR0fX_Lo_Hw"},
+        {"name": "Alan Murin x Kali x Peter Pann - Šalalaj", "id": "1kfEPFfIdQ_daMkYiGIuEAktmrh56qsH0"},
+        {"name": "Alan Murin x Kali x Peter Pann - Ty a ja", "id": "1XuqqPaVFaQqE7es0p3KXu1soNbbwMXUC"},
+        {"name": "Alan Walker & LINHBBK - Lifeline", "id": "1gPYjdiwNYzXZ-btheRlIoZnWdXrzQ4bK"},
+        {"name": "Alan Walker & Sasha Alex Sloan - Hero", "id": "1-iI7evz_JKgFj2C2AEe0XJYIw3528XGn"},
+        {"name": "Alex Choupenitch feat. Alan Murin - Namotaný", "id": "1WA4RIJapp2NkjNLxCqW-C_Wt_ZuKhoVB"},
+        {"name": "Alicia Keys - No One", "id": "1fKuYaRybCd5FPqbNG-guVAhcs2FakCsT"},
+        {"name": "Alle Farben (feat. KIDDO) – Alright", "id": "12k33E0LXxR6IFs5-0X1OCkHaXvFqaaTc"},
+        {"name": "Alok - Love Again (feat. Alida)", "id": "1TBrdvH4WaT4HxdGpXbXExZ4nhretsAJ4"},
+        {"name": "Alok & John Legend - In My Mind", "id": "1nnJFJ4UIINnYxPtFGXM8Cby4gKVE5hE7"},
+        {"name": "Alvaro Soler - Mañana ft. Cali Y El Dandee", "id": "1G2McSyWaBnOIzsHYTwR-gq-cNnCS2oXB"},
+        {"name": "Andy Grammer & R3HAB - Don't Give Up On Me", "id": "1LjDK9dje0fC69wq35831yvy5FpwgVzj2"},
+        {"name": "ANESKA - Křivda", "id": "1N5_iWnSN5fGEn8gWyggwWQVezzYrUrn-"},
+        {"name": "Angelika Vee - Coco Jambo (Calippo Remix)", "id": "1-fb-G6WT6Z-J9JffbLzXUXCkl56wr88r"},
+        {"name": "Armin van Buuren feat. JAI RYU - Let It Be For Love", "id": "1pDtJX_G9Xb4OtOcaV692a88ZIgONJodL"},
+        {"name": "AronChupa, Little Sis Nora – The Woodchuck Song", "id": "1BedqmdP92-Rk-wzs1eljq5o41fN1C6Ck"},
+        {"name": "ATMO music - Hurikán", "id": "15vF0EzMFDamxrkUJ4UPxw6J7U0JBDDjv"},
+        {"name": "AVAION - Pieces", "id": "1dJaisFnPAO5ZkITVeXRiX4GPb3P0wyOs"},
+        {"name": "Avicii ｜ Waiting For Love Remix by SJ", "id": "1FSQ3v8utwLDdZlrh07Ofug9uDZc0-1l_"},
+        {"name": "Avril Lavigne - Bite Me", "id": "1xJ-Ks5fuGdvQX0T5RF9amrEoKlPcUpzS"},
+        {"name": "Avril Lavigne - Young & Dumb (feat. Simple Plan)", "id": "1g1JxBaXQEw5bhgqykk5-z_wQBjF8H9bu"},
+        {"name": "Back to the Start", "id": "1MRIppRHaFoZov70GSMZ-H8x0OAnETH5j"},
+        {"name": "Backstreet Boys - As Long As You Love Me", "id": "1C9nKzN0YWJbvceNE7YuSQzWTVr9y_UmY"},
+        {"name": "Baddadan", "id": "1VyMVDjxolRxop5sMkAaiyX5iRRAY0TuQ"},
+        {"name": "Bakermat - Good Feeling (feat. Rhys Lewis)", "id": "15bEbHpVkLaYYj8eNWouDi_dGF3ZNxEAA"},
+        {"name": "Beautiful Day - Jonathan Roy", "id": "1jGjpQAvzDKZwm61dFvAP4ShJQu8kyBx7"},
+        {"name": "Bebe Rexha - Meant to Be", "id": "1v6MRwqC6iKLFoykjLbIEinTGN1yKDZJi"},
+        {"name": "Becky Hill, Topic - My Heart Goes (La Di Da)", "id": "1UAypYLFgyG2DKOzm80HL4UA2DX4fnksc"},
+        {"name": "Beéle, Farruko - Santorini", "id": "1qmEa2-usJJuiMd1jM0rSuIwj5hIoFmly"},
+        {"name": "Bella Ciao - La Casa De Papel (CrazyDaniel Remix)", "id": "17OXnmI94aNI7Nh7f7w7yF8okeZMQXH04"}
+    ];
+
+    const audio = document.getElementById('audio-player');
+    const playBtn = document.getElementById('play-btn');
+    const playIcon = document.getElementById('play-icon');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const volumeSlider = document.getElementById('volume-slider');
+    const currentTimeEl = document.getElementById('current-time');
+    const durationEl = document.getElementById('duration');
+    const trackNameEl = document.getElementById('track-name');
+    const playlistEl = document.getElementById('playlist');
+
+    let currentSongIndex = 0;
+    let isPlaying = false;
+
+    // Funkce pro získání streamovacího odkazu
+    function getStreamUrl(id) {
+        // Formát uc?export=download je nejstabilnější, ale vyžaduje bypass CORS na straně prohlížeče
+        // Pro GitHub Pages bez backendu je toto nejlepší cesta, Google obvykle audio streamy povoluje
+        return `https://drive.google.com/uc?export=download&id=${id}`;
+    }
+
+    // Inicializace playlistu
+    function initPlaylist() {
+        playlistEl.innerHTML = '';
+        songs.forEach((song, index) => {
+            const item = document.createElement('div');
+            item.classList.add('playlist-item');
+            if (index === currentSongIndex) item.classList.add('active');
+            
+            item.innerHTML = `
+                <span class="track-index">${index + 1}</span>
+                <span class="track-title">${song.name}</span>
+            `;
+            
+            item.addEventListener('click', () => {
+                loadSong(index);
+                playSong();
+            });
+            
+            playlistEl.appendChild(item);
+        });
+    }
+
+    // Načtení písničky
+    function loadSong(index, startTime = 0) {
+        currentSongIndex = index;
+        const song = songs[index];
+        trackNameEl.textContent = song.name;
+        audio.src = getStreamUrl(song.id);
+        
+        // Aktualizace aktivní položky v playlistu
+        document.querySelectorAll('.playlist-item').forEach((item, i) => {
+            item.classList.toggle('active', i === index);
+        });
+
+        // Nastavení času, pokud je uložen
+        if (startTime > 0) {
+            audio.currentTime = startTime;
+        }
+
+        saveState();
+    }
+
+    // Přehrávání / Pauza
+    function togglePlay() {
+        if (isPlaying) {
+            pauseSong();
+        } else {
+            playSong();
+        }
+    }
+
+    function playSong() {
+        isPlaying = true;
+        playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>';
+        audio.play().catch(e => console.error("Chyba při přehrávání:", e));
+    }
+
+    function pauseSong() {
+        isPlaying = false;
+        playIcon.innerHTML = '<path d="M8 5v14l11-7z"></path>';
+        audio.pause();
+    }
+
+    // Předchozí / Další
+    function prevSong() {
+        currentSongIndex--;
+        if (currentSongIndex < 0) currentSongIndex = songs.length - 1;
+        loadSong(currentSongIndex);
+        playSong();
+    }
+
+    function nextSong() {
+        currentSongIndex++;
+        if (currentSongIndex >= songs.length) currentSongIndex = 0;
+        loadSong(currentSongIndex);
+        playSong();
+    }
+
+    // Formátování času
+    function formatTime(seconds) {
+        const min = Math.floor(seconds / 60);
+        const sec = Math.floor(seconds % 60);
+        return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+    }
+
+    // Ukládání stavu do LocalStorage
+    function saveState() {
+        const state = {
+            index: currentSongIndex,
+            time: audio.currentTime,
+            volume: audio.volume
+        };
+        localStorage.setItem('gothicPlayerState', JSON.stringify(state));
+    }
+
+    // Načtení stavu z LocalStorage
+    function loadState() {
+        const saved = localStorage.getItem('gothicPlayerState');
+        if (saved) {
+            const state = JSON.parse(saved);
+            currentSongIndex = state.index || 0;
+            audio.volume = state.volume !== undefined ? state.volume : 0.7;
+            volumeSlider.value = audio.volume;
+            loadSong(currentSongIndex, state.time || 0);
+        } else {
+            loadSong(0);
+        }
+    }
+
+    // Event Listeners
+    playBtn.addEventListener('click', togglePlay);
+    prevBtn.addEventListener('click', prevSong);
+    nextBtn.addEventListener('click', nextSong);
+
+    audio.addEventListener('timeupdate', () => {
+        const progress = (audio.currentTime / audio.duration) * 100;
+        progressBar.value = progress || 0;
+        currentTimeEl.textContent = formatTime(audio.currentTime);
+        if (!isNaN(audio.duration)) {
+            durationEl.textContent = formatTime(audio.duration);
+        }
+        // Průběžně ukládat čas
+        if (Math.floor(audio.currentTime) % 5 === 0) saveState();
+    });
+
+    progressBar.addEventListener('input', () => {
+        const time = (progressBar.value / 100) * audio.duration;
+        audio.currentTime = time;
+    });
+
+    volumeSlider.addEventListener('input', () => {
+        audio.volume = volumeSlider.value;
+        saveState();
+    });
+
+    audio.addEventListener('ended', nextSong);
+
+    // Spuštění
+    initPlaylist();
+    loadState();
+
+</script>
+
+</body>
+</html>
